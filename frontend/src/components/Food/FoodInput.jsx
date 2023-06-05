@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Box, Typography, TextField, Select, MenuItem } from "@mui/material";
+import {
+	Box,
+	Typography,
+	TextField,
+	Select,
+	MenuItem,
+	Button,
+} from "@mui/material";
 import { fetchIngredientData } from "../../api/apifetchers";
+import moment from "moment";
 
 const FoodInput = (props) => {
 	const [servingsInput, setServingsInput] = useState("");
@@ -15,10 +23,10 @@ const FoodInput = (props) => {
 		setSelectedUnitOption(event.target.value);
 	};
 
-	const [selectedMealOption, setSelectedMealOption] = useState("");
+	const [selectedDayOption, setSelectedDayOption] = useState("");
 
-	const handleMealOptionChange = (event) => {
-		setSelectedMealOption(event.target.value);
+	const handleDayOptionChange = (event) => {
+		setSelectedDayOption(event.target.value);
 	};
 
 	const getIngredientData = async (ingredientID, amount, unit) => {
@@ -44,6 +52,44 @@ const FoodInput = (props) => {
 		} else {
 			console.log("res failed");
 		}
+	};
+
+	const handleDBsubmit = () => {
+		const nutrientList = [
+			"Calories",
+			"Sodium",
+			"Fat",
+			"Potassium",
+			"Saturated",
+			"Carbohydrates",
+			"Poly Unsaturated Fat",
+			"Fiber",
+			"Mono Unsaturated Fat",
+			"Sugar",
+			"Trans Fat",
+			"Protein",
+			"Cholesterol",
+		];
+
+		const dbObj = {
+			user_id: "1",
+			ingredient_id: props.ingredientDataState.id,
+			name: props.ingredientDataState.name,
+			date_entered: moment().utc().format(),
+			dayPeriod: selectedDayOption,
+		};
+
+		nutrientList.forEach((nutrient) => {
+			const nutrientObj = props.ingredientDataState.nutrients.find(
+				(nut) => nut.name.toLowerCase() === nutrient.toLowerCase()
+			);
+
+			const amount = nutrientObj ? nutrientObj.amount : null;
+			const unit = nutrientObj ? nutrientObj.unit : null;
+			dbObj[nutrient] = nutrientObj ? `${amount}${unit}` : null;
+		});
+
+		console.log(dbObj);
 	};
 
 	useEffect(() => {
@@ -97,13 +143,20 @@ const FoodInput = (props) => {
 					</Box>
 					<Typography>To which meal?</Typography>
 					<Select
-						value={selectedMealOption}
-						onChange={handleMealOptionChange}
+						value={selectedDayOption}
+						onChange={handleDayOptionChange}
 					>
 						<MenuItem value={"Breakfast"}>Breakfast</MenuItem>
 						<MenuItem value={"Lunch"}>Lunch</MenuItem>
 						<MenuItem value={"Dinner"}>Dinner</MenuItem>
 					</Select>
+					<Button
+						variant="contained"
+						color="primary"
+						onClick={handleDBsubmit}
+					>
+						Submit
+					</Button>
 				</>
 			)}
 		</Box>

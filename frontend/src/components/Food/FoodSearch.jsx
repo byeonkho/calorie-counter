@@ -16,6 +16,7 @@ const FoodSearch = (props) => {
 				nutrients: data.nutrition.nutrients,
 				category: data.categoryPath,
 				id: data.id,
+				dayPeriod: null,
 			};
 			props.setIngredientDataState(cleanedData);
 			console.log("res ok", "ingredientDataState", cleanedData);

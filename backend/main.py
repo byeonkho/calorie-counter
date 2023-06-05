@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 from datetime import datetime
@@ -12,6 +12,21 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+from flask import Flask, jsonify
+from flask_sqlalchemy import SQLAlchemy
+import pymysql
+from datetime import datetime
+
+pymysql.install_as_MySQLdb()
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = \
+    'mysql://user:2r4u7udlol@localhost:3306/sys'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# models
+##############################################################################
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -43,8 +58,10 @@ class UserNutrition(db.Model):
     nutrition_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     ingredient_id = db.Column(db.Integer, nullable=False)
+    ingredient_name = calories = db.Column(db.String(80), nullable=False)
     date_entered = db.Column(db.DateTime, nullable=False,
                             default=datetime.utcnow)
+    period_of_day = db.Column(db.String(80), default="Morning")
 
     # nutrition
     calories = db.Column(db.String(80), default="0")
@@ -63,36 +80,37 @@ class UserNutrition(db.Model):
 
     user = db.relationship('User', backref=db.backref('calories', lazy=True))
 
-    def __init__(self, user_id, date_entered, calories, ingredient_id):
-        self.user_id = user_id
-        self.date_entered = date_entered
-        self.calories = calories
-        self.ingredient_id = ingredient_id
+    # def __init__(self, user_id, date_entered, ingredient_id):
+    #     self.user_id = user_id
+    #     self.date_entered = date_entered
+    #     self.ingredient_id = ingredient_id
 
+# end of models
+##############################################################################
 @app.route('/seed')
 def initialize_database():
     # Drop all existing tables (for testing purposes)
-    table_names = db.metadata.tables.keys()
-    print(', '.join(table_names))
-
     db.drop_all()
 
     # Create the tables
     db.create_all()
 
     # Create some example users
-    user1 = User(username='john', user_firstname="john", user_lastname="nee",
+    user1 = User(username='john', user_firstname="john",
+                     user_lastname="nee",
                  user_password="pw")
     user1weight = UserWeight(user_id="1", weight="80")
     user1calories = UserNutrition(user_id = "1", date_entered=None,
                                  calories="300",
-                                 ingredient_id="123")
+                                 ingredient_id="123",
+                                  ingredient_name="food")
     user2 = User(username='mary', user_firstname="mary", user_lastname="mee",
                  user_password="pw")
     user2weight = UserWeight(user_id="2", weight="70")
     user2calories = UserNutrition(user_id="2", date_entered=None,
                                  calories="500",
-                                 ingredient_id="321")
+                                 ingredient_id="321",
+                                    ingredient_name="food")
 
 
     # Add the users to the session
@@ -146,6 +164,62 @@ def get_users():
         rows.append(user_data)
 
     return jsonify({'users': rows})
+
+
+@app.route('/register', methods=['PUT'])
+def add_user():
+    # Retrieve user details from the request body
+    data = request.get_json()
+    username = data.get('username')
+    user_firstname = data.get('user_firstname')
+    user_lastname = data.get('user_lastname')
+    user_password = data.get('user_password')
+
+    # Create a new User instance
+    new_user = User(username=username, user_firstname=user_firstname,
+                    user_lastname=user_lastname, user_password=user_password)
+
+    # Add the new user to the database session
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({'message': 'New user added successfully'})
+
+@app.route('/addfood', methods=['PUT'])
+def add_food():
+    data = request.json
+    user_id = data.get('user_id')
+
+    # Check if user_id exists in the request body
+    if user_id is None:
+        return jsonify({'error': 'user_id is missing'}), 400
+
+    # Create a new UserNutrition object
+    nutrition = UserNutrition(user_id=user_id,
+                              date_entered=None,
+                              ingredient_id="12345",
+                              ingredient_name=data.get('name'))
+
+    # Add more key-value assignments for other nutrition attributes
+    nutrition.calories = data.get('Calories')
+    nutrition.fat = data.get('Fat')
+    nutrition.saturated = data.get('Saturated')
+    nutrition.polyunsaturatedfat = data.get('Poly Unsaturated Fat')
+    nutrition.monounsaturatedfat = data.get('Mono Unsaturated Fat')
+    nutrition.transfat = data.get('Trans Fat')
+    nutrition.cholesterol = data.get('Cholesterol')
+    nutrition.sodium = data.get('Sodium')
+    nutrition.potassium = data.get('Potassium')
+    nutrition.carbohydrates = data.get('Carbohydrates')
+    nutrition.fiber = data.get('Fiber')
+    nutrition.sugar = data.get('Sugar')
+    nutrition.protein = data.get('Protein')
+
+    # Add the nutrition object to the session and commit the changes
+    db.session.add(nutrition)
+    db.session.commit()
+
+    return jsonify({'message': 'UserNutrition added successfully'}), 200
 
 if __name__ == '__main__':
     app.run()
