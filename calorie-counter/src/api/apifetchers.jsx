@@ -31,19 +31,25 @@ const fetchSearchIngredients = async (query, token) => {
 			returnValue = { ok: false, data: "An error has occurred" };
 		}
 	}
-	return returnValue; 
+	return returnValue;
 };
 
-const fetchIngredientData = async (ingredientID, token) => {
-	const res = await fetch(
-		`https://api.spoonacular.com/food/ingredients/${ingredientID}/information?apiKey=${apiKey}&amount=150&unit=grams`,
-		{
-			method: "GET",
-			headers: {
-				"Content-Type": "application/json",
-			},
-		}
-	);
+const fetchIngredientData = async (ingredientID, token, amount, unit) => {
+	let url = `https://api.spoonacular.com/food/ingredients/${ingredientID}/information?apiKey=${apiKey}`;
+
+	if (!amount && !unit) {
+		url += `&amount=${100}&unit=${1}`;
+	} else {
+		url += `&amount=${amount}&unit=${unit}`;
+	}
+
+	const res = await fetch(url, {
+		method: "GET",
+		headers: {
+			"Content-Type": "application/json",
+		},
+	});
+
 	const data = await res.json();
 
 	let returnValue = {};
