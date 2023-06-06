@@ -103,7 +103,7 @@ const FoodNutrition = (props) => {
 		<Box
 			sx={{
 				width: "100%",
-				maxWidth: 360,
+				// maxWidth: 360,
 				bgcolor: "background.paper",
 				border: "1px solid gray",
 			}}

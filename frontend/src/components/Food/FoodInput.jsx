@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
 import {
 	Box,
-	Typography,
-	TextField,
-	Select,
-	MenuItem,
 	Button,
+	MenuItem,
+	Select,
+	TextField,
+	Typography,
 } from "@mui/material";
+import React, { useEffect, useState } from "react";
 import { fetchIngredientData } from "../../api/apifetchers";
-import moment from "moment";
 
 const FoodInput = (props) => {
+	// PLACEHOLDER BEFORE LOGIN SYSTEM
+	const user_id = 1;
+	const date_entered = props.formattedDateState;
+
 	const [servingsInput, setServingsInput] = useState("");
 
 	const handleServingsInputChange = (event) => {
@@ -54,6 +57,39 @@ const FoodInput = (props) => {
 		}
 	};
 
+	//////////////////////// fetchers
+
+	const fetchHomeFoodData = async () => {
+		console.log("fetching homefooddata");
+		const backendURL = import.meta.env.VITE_BACKEND_URL;
+
+		const requestOptions = {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ user_id, date_entered }),
+		};
+
+		try {
+			const response = await fetch(
+				backendURL + "/getuserfoods",
+				requestOptions
+			);
+			if (!response.ok) {
+				throw new Error("Request failed with status " + response.status);
+			}
+
+			const data = await response.json();
+			console.log("Nutrients:", data);
+			// setHomeFoodDataState(data);
+			// Process the received nutrients data
+		} catch (error) {
+			console.error("Error:", error);
+			// Handle the error
+		}
+	};
+
 	const putDBSubmit = async (data) => {
 		const backendURL = import.meta.env.VITE_BACKEND_URL;
 
@@ -72,10 +108,15 @@ const FoodInput = (props) => {
 
 			const result = await response.json();
 			console.log(result); // Handle the response from the backend
+			fetchHomeFoodData();
 		} catch (error) {
 			console.error("Error:", error.message);
 		}
+		props.setShowFoodHome(true);
+		props.setShowFoodAdd(false);
 	};
+
+	////////////////////////
 
 	const handleDBsubmit = () => {
 		const nutrientList = [
@@ -133,7 +174,7 @@ const FoodInput = (props) => {
 		<Box
 			sx={{
 				width: "100%",
-				maxWidth: 360,
+				// maxWidth: 360,
 				bgcolor: "background.paper",
 				border: "1px solid gray",
 			}}
@@ -182,7 +223,7 @@ const FoodInput = (props) => {
 						color="primary"
 						onClick={handleDBsubmit}
 					>
-						Submit
+						Add food
 					</Button>
 				</>
 			)}

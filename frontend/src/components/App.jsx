@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import Food from "./Food/Food";
+import Login from "./Login";
 
 import ResponsiveAppBar from "./ResponsiveAppBar";
+import Signup from "./Signup";
 
 const App = () => {
 	return (
@@ -9,6 +11,8 @@ const App = () => {
 			<ResponsiveAppBar />
 			<br />
 			<Food />
+			<Login />
+			{/* <Signup /> */}
 		</>
 	);
 };

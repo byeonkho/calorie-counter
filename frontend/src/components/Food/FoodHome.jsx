@@ -1,30 +1,313 @@
 import {
-	Box,
 	Button,
 	Divider,
-	Typography,
 	Paper,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
 	TableRow,
+	Typography,
+	Box,
+	Grid,
+	TableHead,
 } from "@mui/material";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import dayjs from "dayjs";
-import * as React from "react";
+import ClearIcon from "@mui/icons-material/Clear";
+import IconButton from "@mui/material/IconButton";
+import React, { useEffect, useState } from "react";
 
-const FoodHome = () => {
+const FoodHome = (props) => {
+	const [HomeFoodDataState, setHomeFoodDataState] = useState([]);
+
+	const user_id = 1;
+	const date_entered = props.formattedDateState;
+
+	////////////////////// handlers
+	const handleDeleteNutrition = (el) => {
+		fetchDeleteNutrition(el);
+	};
+
+	const handleToggleFoodHome = () => {
+		props.setShowFoodHome(false);
+		props.setShowFoodAdd(true);
+	};
+
+	////////////////////// fetchers
+	const fetchDeleteNutrition = async (nutritionId) => {
+		try {
+			const backendURL = import.meta.env.VITE_BACKEND_URL;
+
+			const requestOptions = {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ nutrition_id: nutritionId }),
+			};
+
+			const response = await fetch(
+				backendURL + "/delete_nutrition",
+				requestOptions
+			);
+			const data = await response.json();
+			console.log("Nutrition entry deleted:", data);
+			// Handle successful deletion
+			fetchHomeFoodData(); // Call the function to fetch updated data after deletion
+		} catch (error) {
+			console.error("Error deleting nutrition entry:", error);
+			// Handle error
+		}
+	};
+
+	const fetchHomeFoodData = async () => {
+		console.log("fetching homefooddata");
+		const backendURL = import.meta.env.VITE_BACKEND_URL;
+
+		const requestOptions = {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ user_id, date_entered }),
+		};
+
+		try {
+			const response = await fetch(
+				backendURL + "/getuserfoods",
+				requestOptions
+			);
+			if (!response.ok) {
+				throw new Error("Request failed with status " + response.status);
+			}
+
+			const data = await response.json();
+			console.log("Nutrients:", data);
+			setHomeFoodDataState(data);
+			// Process the received nutrients data
+		} catch (error) {
+			console.error("Error:", error);
+			// Handle the error
+		}
+	};
+
+	//////////////////////
+
+	useEffect(() => {
+		// Code to run when `dateState` changes
+		if (props.formattedDateState) {
+			fetchHomeFoodData();
+		}
+
+		// Make API call or perform any other necessary actions
+
+		// Clean up the effect if needed
+		return () => {
+			// Code to clean up the effect
+		};
+	}, [props.formattedDateState]);
+
+    // why does useeffect trigger when i submit food?
+
 	return (
 		<>
-		
 			<br />
 			<Divider />
 			<br />
-			<Typography>Breakfast</Typography>
-			<Button>Add Food</Button>
+			<Grid
+				container
+				// sx={{ width: "100%", maxWidth: "1000px" }}
+				// justifyContent="center"
+				// alignItems="center"
+			>
+				<Grid
+					item
+					xs={2}
+				></Grid>
+				<Grid
+					item
+					xs={10}
+				></Grid>
+				<Grid
+					item
+					xs={2}
+				>
+					<Typography>Breakfast</Typography>
+				</Grid>
+				<Grid
+					item
+					xs={10}
+				></Grid>
+			</Grid>
+
+			<TableContainer component={Paper}>
+				<Table
+					size="small"
+					aria-label="a dense table"
+				>
+					<TableHead sx={{ border: "none" }}>
+						<TableRow sx={{ border: "none" }}>
+							<TableCell
+								sx={{
+									width: "20%",
+									border: "none",
+								}}
+							></TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Calories
+								<br />
+								kcal
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Carbs
+								<br />g
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Fat
+								<br />g
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Protein
+								<br />g
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Sodium
+								<br />
+								mg
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							>
+								Sugar
+								<br />g
+							</TableCell>
+						</TableRow>
+					</TableHead>
+					<TableBody>
+						{HomeFoodDataState.nutrients &&
+							HomeFoodDataState.nutrients
+								.filter((nutrient) => nutrient.period_of_day === "Breakfast")
+								.map((nutrient) => {
+									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
+									const carbohydrates = nutrient.Carbohydrates.replace(
+										/[^0-9.]/g,
+										""
+									);
+									const fat = nutrient.Fat.replace(/[^0-9.]/g, "");
+									const protein = nutrient.Protein.replace(/[^0-9.]/g, "");
+									const sodium = nutrient.Sodium.replace(/[^0-9.]/g, "");
+									const sugar = nutrient.Sugar.replace(/[^0-9.]/g, "");
+									return (
+										<TableRow
+											key={nutrient.nutrition_id}
+											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+										>
+											<TableCell
+												align="left"
+												sx={{ width: "20%" }}
+											>
+												{nutrient.ingredient_name} - {nutrient.servings}{" "}
+												{nutrient.unit}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{calories}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{carbohydrates}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{fat}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{protein}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sodium}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sugar}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												<IconButton
+													onClick={() =>
+														handleDeleteNutrition(nutrient.nutrition_id)
+													}
+													aria-label="delete"
+													sx={{ width: "10%" }}
+												>
+													<ClearIcon />
+												</IconButton>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+					</TableBody>
+				</Table>
+			</TableContainer>
+			<Button onClick={handleToggleFoodHome}>Add Food</Button>
+			<Divider />
+			<Typography>Lunch</Typography>
+
 			<TableContainer component={Paper}>
 				<Table
 					// sx={{ minWidth: 650 }}
@@ -32,69 +315,181 @@ const FoodHome = () => {
 					aria-label="a dense table"
 				>
 					<TableBody>
-						<TableRow
-							sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-						>
-							<TableCell
-								component="th"
-								scope="row"
-								align="left"
-							>
-								foodname
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								calories
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								carbs
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								fat
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								protein
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								sodium
-							</TableCell>
-							<TableCell
-								component="th"
-								scope="row"
-								align="right"
-							>
-								sugar
-							</TableCell>
-						</TableRow>
+						{HomeFoodDataState.nutrients &&
+							HomeFoodDataState.nutrients
+								.filter((nutrient) => nutrient.period_of_day === "Lunch")
+								.map((nutrient) => {
+									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
+									const carbohydrates = nutrient.Carbohydrates.replace(
+										/[^0-9.]/g,
+										""
+									);
+									const fat = nutrient.Fat.replace(/[^0-9.]/g, "");
+									const protein = nutrient.Protein.replace(/[^0-9.]/g, "");
+									const sodium = nutrient.Sodium.replace(/[^0-9.]/g, "");
+									const sugar = nutrient.Sugar.replace(/[^0-9.]/g, "");
+
+									return (
+										<TableRow
+											key={nutrient.nutrition_id}
+											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+										>
+											<TableCell
+												align="left"
+												sx={{ width: "20%" }}
+											>
+												{nutrient.ingredient_name} - {nutrient.servings}{" "}
+												{nutrient.unit}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{calories}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{carbohydrates}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{fat}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{protein}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sodium}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sugar}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												<IconButton
+													onClick={() =>
+														handleDeleteNutrition(nutrient.nutrition_id)
+													}
+													aria-label="delete"
+													sx={{ width: "10%" }}
+												>
+													<ClearIcon />
+												</IconButton>
+											</TableCell>
+										</TableRow>
+									);
+								})}
 					</TableBody>
 				</Table>
 			</TableContainer>
-
-			<Divider />
-			<Typography>Lunch</Typography>
-			<Button>Add Food</Button>
+			<Button onClick={handleToggleFoodHome}>Add Food</Button>
 			<Divider />
 			<Typography>Dinner</Typography>
-			<Button>Add Food</Button>
+
+			<TableContainer component={Paper}>
+				<Table
+					// sx={{ minWidth: 650 }}
+					size="small"
+					aria-label="a dense table"
+				>
+					<TableBody>
+						{HomeFoodDataState.nutrients &&
+							HomeFoodDataState.nutrients
+								.filter((nutrient) => nutrient.period_of_day === "Dinner")
+								.map((nutrient) => {
+									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
+									const carbohydrates = nutrient.Carbohydrates.replace(
+										/[^0-9.]/g,
+										""
+									);
+									const fat = nutrient.Fat.replace(/[^0-9.]/g, "");
+									const protein = nutrient.Protein.replace(/[^0-9.]/g, "");
+									const sodium = nutrient.Sodium.replace(/[^0-9.]/g, "");
+									const sugar = nutrient.Sugar.replace(/[^0-9.]/g, "");
+
+									return (
+										<TableRow
+											key={nutrient.nutrition_id}
+											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+										>
+											<TableCell
+												align="left"
+												sx={{ width: "20%" }}
+											>
+												{nutrient.ingredient_name} - {nutrient.servings}{" "}
+												{nutrient.unit}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{calories}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{carbohydrates}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{fat}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{protein}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sodium}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												{sugar}
+											</TableCell>
+											<TableCell
+												align="center"
+												sx={{ width: "10%" }}
+											>
+												<IconButton
+													onClick={() =>
+														handleDeleteNutrition(nutrient.nutrition_id)
+													}
+													aria-label="delete"
+												>
+													<ClearIcon />
+												</IconButton>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+					</TableBody>
+				</Table>
+			</TableContainer>
+			<Button onClick={handleToggleFoodHome}>Add Food</Button>
 		</>
 	);
 };

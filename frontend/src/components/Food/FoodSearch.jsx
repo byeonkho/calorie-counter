@@ -67,18 +67,12 @@ const FoodSearch = (props) => {
 		getIngredientData(value);
 	};
 
-	// export default function SelectedListItem() {
-	//     const [selectedIndex, setSelectedIndex] = React.useState(1);
-
-	//     const handleListItemClick = (event, index) => {
-	//       setSelectedIndex(index);
-	//     };
 
 	return (
 		<Box
 			sx={{
 				width: "100%",
-				maxWidth: 360,
+				// maxWidth: 500,
 				bgcolor: "background.paper",
 				border: "1px solid gray",
 			}}

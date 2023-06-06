@@ -9,6 +9,8 @@ flask-sqlalchemy = "*"
 mysql-connector-python = "*"
 pymysql = "*"
 flask-cors = "*"
+flask-bcrypt = "*"
+flask-jwt-extended = "*"
 
 [dev-packages]
 

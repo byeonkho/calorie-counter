@@ -2,7 +2,10 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timedelta
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, create_access_token, \
+    create_refresh_token, jwt_required, get_jwt_identity
 
 pymysql.install_as_MySQLdb()
 
@@ -10,22 +13,16 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'mysql://user:2r4u7udlol@localhost:3306/sys'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=0.5)
+app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
+cors = CORS(app, resources={r"/*": {"origins": "*"}})
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
-from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
-import pymysql
-from datetime import datetime
-
-pymysql.install_as_MySQLdb()
-
-app = Flask(__name__)
-CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = \
-    'mysql://user:2r4u7udlol@localhost:3306/sys'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 # models
 ##############################################################################
@@ -34,8 +31,8 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     user_firstname = db.Column(db.String(80), nullable=False)
     user_lastname = db.Column(db.String(80), nullable=False)
-    user_password = db.Column(db.String(80), nullable=False)
-    user_is_admin = db.Column(db.Boolean, default=True, nullable=False)
+    user_password_hash = db.Column(db.String(80), nullable=False)
+    user_is_admin = db.Column(db.Boolean, default=False, nullable=False)
 
 class UserWeight(db.Model):
     weight_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -54,7 +51,7 @@ class UserNutrition(db.Model):
     unit = db.Column(db.String(40), nullable=False)
     date_entered = db.Column(db.String(80), nullable=False,
                             default=datetime.utcnow)
-    period_of_day = db.Column(db.String(20), default="Morning")
+    period_of_day = db.Column(db.String(20), default="Breakfast")
 
     # nutrition
     calories = db.Column(db.String(80), default="0")
@@ -73,11 +70,6 @@ class UserNutrition(db.Model):
 
     user = db.relationship('User', backref=db.backref('calories', lazy=True))
 
-    # def __init__(self, user_id, date_entered, ingredient_id):
-    #     self.user_id = user_id
-    #     self.date_entered = date_entered
-    #     self.ingredient_id = ingredient_id
-
 # end of models
 ##############################################################################
 @app.route('/seed')
@@ -89,18 +81,27 @@ def initialize_database():
     db.create_all()
 
     # Create some example users
-    user1 = User(username='john', user_firstname="john",
-                     user_lastname="nee",
-                 user_password="pw")
+    user1 = User(username='admin@admin', user_firstname="jesus",
+                     user_lastname="christ",
+                user_password_hash=bcrypt.generate_password_hash(
+                    "admin").decode(
+                     'utf-8'),
+                 user_is_admin=True)
+
     user1weight = UserWeight(user_id="1", weight="80")
     user1calories = UserNutrition(user_id = "1", date_entered=None,
                                  calories="300",
                                  ingredient_id="123",
                                 ingredient_name="food",
                                 servings="1",
-                                unit = "kg"    )
-    user2 = User(username='mary', user_firstname="mary", user_lastname="mee",
-                 user_password="pw")
+                                unit = "kg")
+    user2 = User(username='mary@gmail.com', user_firstname="mary",
+                 user_lastname="mee",
+                 user_password_hash=bcrypt.generate_password_hash(
+                     "hash").decode(
+                     'utf-8'))
+
+
     user2weight = UserWeight(user_id="2", weight="70")
     user2calories = UserNutrition(user_id="2", date_entered=None,
                                  calories="500",
@@ -138,7 +139,7 @@ def get_users():
             'username': user.username,
             'user_firstname': user.user_firstname,
             'user_lastname': user.user_lastname,
-            'user_password': user.user_password,
+            'user_password_hash': user.user_password_hash,
             'user_is_admin': user.user_is_admin,
             'weight_id': weight.weight_id,
             'weight': weight.weight,
@@ -164,25 +165,6 @@ def get_users():
     return jsonify({'users': rows})
 
 
-@app.route('/register', methods=['PUT'])
-def add_user():
-    # Retrieve user details from the request body
-    data = request.get_json()
-    username = data.get('username')
-    user_firstname = data.get('user_firstname')
-    user_lastname = data.get('user_lastname')
-    user_password = data.get('user_password')
-
-    # Create a new User instance
-    new_user = User(username=username, user_firstname=user_firstname,
-                    user_lastname=user_lastname, user_password=user_password)
-
-    # Add the new user to the database session
-    db.session.add(new_user)
-    db.session.commit()
-
-    return jsonify({'message': 'New user added successfully'})
-
 @app.route('/addfood', methods=['PUT'])
 def add_food():
     data = request.json
@@ -198,7 +180,8 @@ def add_food():
                               ingredient_id=data.get("ingredient_id"),
                               ingredient_name=data.get('name'),
                               servings=data.get("servings"),
-                              unit=data.get("unit"))
+                              unit=data.get("unit"),
+                              period_of_day=data.get("dayPeriod"))
 
     # Add more key-value assignments for other nutrition attributes
     nutrition.calories = data.get('Calories')
@@ -220,6 +203,116 @@ def add_food():
     db.session.commit()
 
     return jsonify({'message': 'UserNutrition added successfully'}), 200
+
+
+@app.route('/getuserfoods', methods=['POST'])
+def get_userfoods():
+    data = request.json
+    user_id = data.get('user_id')
+    date_entered = data.get('date_entered')
+
+    # Check if user_id, and date_entered are provided
+    if not user_id or not date_entered:
+        return jsonify({'error': 'Incomplete parameters'}), 400
+
+    # Retrieve nutrients based on the provided parameters
+    nutrients = db.session.query(UserNutrition).\
+        join(User, User.user_id == UserNutrition.user_id).\
+        filter(UserNutrition.user_id == user_id,
+               UserNutrition.date_entered == date_entered).all()
+
+    # Prepare the response data
+    nutrient_data = []
+    for nutrient in nutrients:
+        nutrient_data.append({
+        "ingredient_id" : nutrient.ingredient_id,
+        "ingredient_name" : nutrient.ingredient_name,
+        "nutrition_id": nutrient.nutrition_id,
+        "servings" : nutrient.servings,
+        "unit" : nutrient.unit,
+        "date_entered" : nutrient.date_entered,
+        "period_of_day" : nutrient.period_of_day,
+        "Calories": nutrient.calories,
+        "Carbohydrates": nutrient.carbohydrates,
+        "Fat": nutrient.fat,
+        "Protein": nutrient.protein,
+        "Sodium": nutrient.sodium,
+        "Sugar": nutrient.sugar
+            # Include other nutrient attributes
+        })
+
+    return jsonify({'nutrients': nutrient_data}), 200
+
+@app.route('/delete_nutrition', methods=['DELETE'])
+def delete_nutrition():
+    nutrition_id = request.json.get('nutrition_id')
+
+    if nutrition_id is None:
+        return jsonify({'error': 'nutrition_id is missing'}), 400
+
+    # Find the UserNutrition row with the given nutrition_id
+    nutrition = UserNutrition.query.get(nutrition_id)
+
+    if nutrition is None:
+        return jsonify({'error': 'Nutrition entry not found'}), 404
+
+    # Delete the row from the database
+    db.session.delete(nutrition)
+    db.session.commit()
+
+    return jsonify({'message': 'Nutrition entry deleted successfully'})
+
+@app.route('/register', methods=['POST'])
+def register():
+    username = request.json.get('username')
+    user_firstname = request.json.get('user_firstname')
+    user_lastname = request.json.get('user_lastname')
+    password = request.json.get('password')
+
+    if not username or not password or not user_firstname or not user_lastname:
+        return jsonify({'message': 'Username and password are required'}), 400
+
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return jsonify({'message': 'Username already exists'}), 409
+
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+    new_user = User(username=username, user_password_hash=hashed_password,
+                    user_firstname=user_firstname,
+                    user_lastname=user_lastname)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({'message': 'User registered successfully'}), 201
+
+# Login endpoint
+@app.route('/login', methods=['POST'])
+def login():
+    # return jsonify({'message': 'Invalid username or password'}), 401
+    username = request.json.get('username')
+    password = request.json.get('password')
+
+    if not username or not password:
+        return jsonify({'message': 'Username and password are required'}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'message': 'Invalid username or password'}), 401
+
+    if bcrypt.check_password_hash(user.user_password_hash, password):
+        access_token = create_access_token(identity=user.user_id)
+        refresh_token = create_refresh_token(identity=user.user_id)
+        return jsonify({'access_token': access_token, 'refresh_token': refresh_token}), 200
+
+
+@app.route('/refresh_token', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh_token():
+    current_user = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user)
+    return jsonify({'access_token': new_access_token}), 200
+
 
 if __name__ == '__main__':
     app.run()
