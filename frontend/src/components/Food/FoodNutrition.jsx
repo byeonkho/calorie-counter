@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from "react";
 import {
-	List,
 	Box,
-	ListItemButton,
-	ListItemText,
-	Typography,
 	Divider,
+	Paper,
 	Table,
 	TableBody,
 	TableCell,
 	TableContainer,
-	TableHead,
 	TableRow,
-	Paper,
+	Typography
 } from "@mui/material";
+import React, { useEffect, useState } from "react";
 
 const FoodNutrition = (props) => {
 	const [rowsState, setRowsState] = useState([

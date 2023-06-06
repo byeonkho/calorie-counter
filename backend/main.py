@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
+from flask_cors import CORS
 from datetime import datetime
 
 pymysql.install_as_MySQLdb()
@@ -20,6 +21,7 @@ from datetime import datetime
 pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = \
     'mysql://user:2r4u7udlol@localhost:3306/sys'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -35,13 +37,6 @@ class User(db.Model):
     user_password = db.Column(db.String(80), nullable=False)
     user_is_admin = db.Column(db.Boolean, default=True, nullable=False)
 
-    def __init__(self, username, user_firstname, user_lastname,
-                 user_password):
-        self.username = username
-        self.user_firstname = user_firstname
-        self.user_password = user_password
-        self.user_lastname = user_lastname
-
 class UserWeight(db.Model):
     weight_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
@@ -50,18 +45,16 @@ class UserWeight(db.Model):
 
     user = db.relationship('User', backref=db.backref('weights', lazy=True))
 
-    def __init__(self, user_id, weight):
-        self.user_id = user_id
-        self.weight = weight
-
 class UserNutrition(db.Model):
     nutrition_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     ingredient_id = db.Column(db.Integer, nullable=False)
-    ingredient_name = calories = db.Column(db.String(80), nullable=False)
-    date_entered = db.Column(db.DateTime, nullable=False,
+    ingredient_name = db.Column(db.String(80), nullable=False)
+    servings = db.Column(db.Integer, nullable=False)
+    unit = db.Column(db.String(40), nullable=False)
+    date_entered = db.Column(db.String(80), nullable=False,
                             default=datetime.utcnow)
-    period_of_day = db.Column(db.String(80), default="Morning")
+    period_of_day = db.Column(db.String(20), default="Morning")
 
     # nutrition
     calories = db.Column(db.String(80), default="0")
@@ -103,14 +96,19 @@ def initialize_database():
     user1calories = UserNutrition(user_id = "1", date_entered=None,
                                  calories="300",
                                  ingredient_id="123",
-                                  ingredient_name="food")
+                                ingredient_name="food",
+                                servings="1",
+                                unit = "kg"    )
     user2 = User(username='mary', user_firstname="mary", user_lastname="mee",
                  user_password="pw")
     user2weight = UserWeight(user_id="2", weight="70")
     user2calories = UserNutrition(user_id="2", date_entered=None,
                                  calories="500",
                                  ingredient_id="321",
-                                    ingredient_name="food")
+                                 ingredient_name="food",
+                                 servings = "1",
+                                 unit = "kg"
+    )
 
 
     # Add the users to the session
@@ -196,9 +194,11 @@ def add_food():
 
     # Create a new UserNutrition object
     nutrition = UserNutrition(user_id=user_id,
-                              date_entered=None,
-                              ingredient_id="12345",
-                              ingredient_name=data.get('name'))
+                              date_entered=data.get("date_entered"),
+                              ingredient_id=data.get("ingredient_id"),
+                              ingredient_name=data.get('name'),
+                              servings=data.get("servings"),
+                              unit=data.get("unit"))
 
     # Add more key-value assignments for other nutrition attributes
     nutrition.calories = data.get('Calories')

@@ -54,6 +54,29 @@ const FoodInput = (props) => {
 		}
 	};
 
+	const putDBSubmit = async (data) => {
+		const backendURL = import.meta.env.VITE_BACKEND_URL;
+
+		try {
+			const response = await fetch(backendURL + "/addfood", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(data),
+			});
+
+			if (!response.ok) {
+				throw new Error("Request failed with status " + response.status);
+			}
+
+			const result = await response.json();
+			console.log(result); // Handle the response from the backend
+		} catch (error) {
+			console.error("Error:", error.message);
+		}
+	};
+
 	const handleDBsubmit = () => {
 		const nutrientList = [
 			"Calories",
@@ -75,7 +98,9 @@ const FoodInput = (props) => {
 			user_id: "1",
 			ingredient_id: props.ingredientDataState.id,
 			name: props.ingredientDataState.name,
-			date_entered: moment().utc().format(),
+			servings: servingsInput,
+			unit: selectedUnitOption,
+			date_entered: props.formattedDateState,
 			dayPeriod: selectedDayOption,
 		};
 
@@ -90,6 +115,8 @@ const FoodInput = (props) => {
 		});
 
 		console.log(dbObj);
+
+		putDBSubmit(dbObj);
 	};
 
 	useEffect(() => {
