@@ -19,7 +19,6 @@ const Admin = () => {
 	const { accessToken } = useUserInfo();
 
 	const fetchDeleteUser = async (user_id) => {
-		console.log("deleting user", user_id);
 		const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 		const requestOptions = {
@@ -44,7 +43,6 @@ const Admin = () => {
 	};
 
 	const fetchUsersData = async () => {
-		console.log("fetching admindata");
 		const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 		const requestOptions = {

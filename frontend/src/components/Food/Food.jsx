@@ -1,17 +1,21 @@
-import { Box, Grid, Typography } from "@mui/material";
+import { Box, Grid, IconButton, Typography } from "@mui/material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { fetchSearchIngredients } from "../../api/apifetchers";
 import FoodAdd from "./FoodAdd";
 import FoodHome from "./FoodHome";
-import { useUserInfo } from "../UserInfoContext";
+
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 const Food = () => {
-	const [selectedDateState, setSelectedDateState] = useState("");
-	const [formattedDateState, setFormattedDateState] = useState("");
+	const [selectedDateState, setSelectedDateState] = useState(dayjs());
+	const [formattedDateState, setFormattedDateState] = useState(
+		dayjs().format("DD-MM-YYYY").toString()
+	);
 	const currentDate = dayjs();
 
 	const [showFoodHome, setShowFoodHome] = useState(true);
@@ -57,58 +61,99 @@ const Food = () => {
 
 		if (ok) {
 			setSearchQueryDataState(data);
-			console.log("res ok", data);
 		} else {
 			console.log("res failed");
+		}
+	};
+
+	const handlePrevDay = () => {
+		if (selectedDateState) {
+			const prevDay = dayjs(selectedDateState).subtract(1, "day");
+			setSelectedDateState(prevDay);
+
+			const formattedDate = selectedDateState
+				? dayjs(selectedDateState).format("DD-MM-YYYY").toString()
+				: "";
+			setFormattedDateState(formattedDate);
+		}
+	};
+
+	const handleNextDay = () => {
+		if (selectedDateState) {
+			const nextDay = dayjs(selectedDateState).add(1, "day");
+			const currentDate = dayjs();
+
+			if (nextDay.isAfter(currentDate, "day")) {
+				return; // Exit the function if trying to go beyond or equal to the current date
+			}
+
+			setSelectedDateState(nextDay);
+
+			const formattedDate = nextDay
+				? nextDay.format("DD-MM-YYYY").toString()
+				: "";
+			setFormattedDateState(formattedDate);
 		}
 	};
 
 	return (
 		<Grid
 			container
-			sx={{ width: "100%", maxWidth: "1000px" }}
-			justifyContent="center"
-			alignItems="center"
+			sx={{
+				width: "100%",
+				maxWidth: "100%",
+				// justifyContent: "center",
+				// alignItems: "center",
+				gap: "16px",
+				padding: "16px",
+			}}
 		>
 			{/* date picker */}
 			<Box
 				display="flex"
 				flexDirection="row"
 				alignItems="center"
+				gap="16px"
 			>
-				<Typography>Your food diary for:</Typography>
+				<Typography variant="h6">Your food diary for:</Typography>
+				<IconButton onClick={handlePrevDay}>
+					<ChevronLeftIcon />
+				</IconButton>
 				<LocalizationProvider dateAdapter={AdapterDayjs}>
 					<DatePicker
 						value={selectedDateState}
 						onChange={handleSelectedDateState}
 						maxDate={currentDate}
-						defaultValue={currentDate}
-						format="DD-MM-YYYY"
+						format="DD MMMM YYYY"
+						sx={{ minWidth: "200px" }}
 					/>
 				</LocalizationProvider>
-				{formattedDateState}
+				<IconButton onClick={handleNextDay}>
+					<ChevronRightIcon />
+				</IconButton>
 			</Box>
 			{/* food homepage component for showing food entries on selected date */}
 			<Grid
 				item
-				xs={10}
-				// sx={{ width: "100%" }}
+				xs={12}
 			>
-				{showFoodHome ? (
-					<FoodHome
-						formattedDateState={formattedDateState}
-						// fetchHomeFoodData={fetchHomeFoodData}
-						setShowFoodAdd={setShowFoodAdd}
-						setShowFoodHome={setShowFoodHome}
-					/>
-				) : null}
+				<Box sx={{ width: "80%", margin: "0 auto" }}>
+					{showFoodHome && (
+						<FoodHome
+							formattedDateState={formattedDateState}
+							selectedDateState={selectedDateState}
+							setShowFoodAdd={setShowFoodAdd}
+							setShowFoodHome={setShowFoodHome}
+						/>
+					)}
+				</Box>
 			</Grid>
+			{/* parent component for FoodSearch, FoodInput, FoodNutrition */}
 			<Grid
 				item
 				xs={12}
 			>
-				{/* parent component for FoodSearch, FoodInput, FoodNutrition */}
-				{showFoodAdd ? (
+				{showFoodAdd && (
 					<FoodAdd
 						searchQueryInputState={searchQueryInputState}
 						handleSearchQueryInputChange={handleSearchQueryInputChange}
@@ -116,16 +161,13 @@ const Food = () => {
 						searchQueryDataState={searchQueryDataState}
 						ingredientDataState={ingredientDataState}
 						setIngredientDataState={setIngredientDataState}
+						selectedDateState={selectedDateState}
 						formattedDateState={formattedDateState}
 						setShowFoodAdd={setShowFoodAdd}
 						setShowFoodHome={setShowFoodHome}
 					/>
-				) : null}
+				)}
 			</Grid>
-			<Grid
-				item
-				xs={6}
-			></Grid>
 		</Grid>
 	);
 };

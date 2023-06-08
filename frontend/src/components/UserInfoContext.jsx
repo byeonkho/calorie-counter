@@ -15,7 +15,6 @@ export const UserInfoProvider = ({ children }) => {
 	useEffect(() => {
 		if (refreshToken) {
 			localStorage.setItem("refreshToken", refreshToken);
-			console.log("refresh token stored in local", refreshToken);
 		}
 	}, [refreshToken]);
 

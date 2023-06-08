@@ -16,10 +16,6 @@ const Signup = (props) => {
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
 
-	const handleUsernameChange = (event) => {
-		setUsername(event.target.value);
-	};
-
 	const handleFirstNameChange = (event) => {
 		setFirstName(event.target.value);
 	};
@@ -166,17 +162,6 @@ const Signup = (props) => {
 						Sign Up
 					</Button>
 					<Grid container>
-						<Grid
-							item
-							xs
-						>
-							<Link
-								href="#"
-								variant="body2"
-							>
-								Forgot password?
-							</Link>
-						</Grid>
 						<Grid item>
 							<Link
 								href="#"

@@ -11,6 +11,7 @@ pymysql = "*"
 flask-cors = "*"
 flask-bcrypt = "*"
 flask-jwt-extended = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

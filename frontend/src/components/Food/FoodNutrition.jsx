@@ -7,11 +7,13 @@ import {
 	TableCell,
 	TableContainer,
 	TableRow,
-	Typography
+	Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { useTheme } from "@mui/material/styles";
 
 const FoodNutrition = (props) => {
+	const theme = useTheme();
 	const [rowsState, setRowsState] = useState([
 		{
 			name: "Calories",
@@ -57,7 +59,6 @@ const FoodNutrition = (props) => {
 		const rows = JSON.parse(JSON.stringify(rowsState));
 
 		for (const obj of rows) {
-			console.log("objname", obj.name);
 			const firstNutrientObj = props.ingredientDataState.nutrients.find(
 				(nutrientObj) => nutrientObj.name.includes(obj.name)
 			);
@@ -130,7 +131,9 @@ const FoodNutrition = (props) => {
 									component="th"
 									scope="row"
 									sx={{
-										fontWeight: boldedItems.includes(row.name) ? "bold" : null,
+										typography: boldedItems.includes(row.name)
+											? theme.typography.subtitle3
+											: theme.typography.body2,
 									}}
 								>
 									{row.name}
@@ -140,9 +143,9 @@ const FoodNutrition = (props) => {
 									component="th"
 									scope="row"
 									sx={{
-										fontWeight: boldedItems.includes(row.secondname)
-											? "bold"
-											: null,
+										typography: boldedItems.includes(row.secondname)
+											? theme.typography.subtitle3
+											: theme.typography.body2,
 									}}
 								>
 									{row.secondname}

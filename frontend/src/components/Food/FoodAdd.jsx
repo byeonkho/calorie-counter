@@ -1,12 +1,9 @@
-import { Button, TextField, Box, Grid } from "@mui/material";
-import FoodSearch from "./FoodSearch";
+import { Box, Button, Grid, TextField } from "@mui/material";
 import FoodInput from "./FoodInput";
 import FoodNutrition from "./FoodNutrition";
-import { useState } from "react";
+import FoodSearch from "./FoodSearch";
 
 const FoodAdd = (props) => {
-	// const [foodAddModalOpen, setFoodAddModalOpen] = useState(False)
-
 	return (
 		<>
 			<TextField
@@ -25,9 +22,10 @@ const FoodAdd = (props) => {
 			</Button>
 			<Grid
 				container
-				sx={{ width: "100%", maxWidth: "2000px" }}
+				sx={{ width: "90%" }}
 				justifyContent="center"
-				alignItems="center"
+				alignItems="top"
+				marginTop={"20px"}
 			>
 				<Grid
 					item
@@ -44,15 +42,15 @@ const FoodAdd = (props) => {
 					item
 					xs={6}
 				>
-					<Box sx={{ width: "400px" }}>
+					<Box sx={{ width: "100%" }}>
 						<FoodInput
 							ingredientDataState={props.ingredientDataState}
 							searchQueryDataState={props.searchQueryDataState}
 							setIngredientDataState={props.setIngredientDataState}
 							formattedDateState={props.formattedDateState}
-							// setFoodAddModalOpen={setFoodAddModalOpen}
-                            setShowFoodAdd={props.setShowFoodAdd}
-                            setShowFoodHome={props.setShowFoodHome}
+							setShowFoodAdd={props.setShowFoodAdd}
+							setShowFoodHome={props.setShowFoodHome}
+							selectedDateState={props.selectedDateState}
 						/>
 						{props.ingredientDataState.name && (
 							<FoodNutrition ingredientDataState={props.ingredientDataState} />

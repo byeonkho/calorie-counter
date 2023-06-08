@@ -9,9 +9,10 @@ import {
 import React, { useEffect, useState } from "react";
 import { fetchIngredientData } from "../../api/apifetchers";
 import { useUserInfo } from "../UserInfoContext";
+import dayjs from "dayjs";
 
 const FoodInput = (props) => {
-	const { userID } = useUserInfo();
+	const { userID, accessToken } = useUserInfo();
 
 	const user_id = userID;
 	const date_entered = props.formattedDateState;
@@ -53,7 +54,7 @@ const FoodInput = (props) => {
 				id: data.id,
 			};
 			props.setIngredientDataState(cleanedData);
-			console.log("res ok", "ingredientDataState", cleanedData);
+		
 		} else {
 			console.log("res failed");
 		}
@@ -62,13 +63,14 @@ const FoodInput = (props) => {
 	//////////////////////// fetchers
 
 	const fetchHomeFoodData = async () => {
-		console.log("fetching homefooddata");
+		
 		const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 		const requestOptions = {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				Authorization: `Bearer ${accessToken}`,
 			},
 			body: JSON.stringify({ user_id, date_entered }),
 		};
@@ -83,7 +85,7 @@ const FoodInput = (props) => {
 			}
 
 			const data = await response.json();
-			console.log("Nutrients:", data);
+		
 			// setHomeFoodDataState(data);
 			// Process the received nutrients data
 		} catch (error) {
@@ -109,7 +111,7 @@ const FoodInput = (props) => {
 			}
 
 			const result = await response.json();
-			console.log(result); // Handle the response from the backend
+		
 			fetchHomeFoodData();
 		} catch (error) {
 			console.error("Error:", error.message);
@@ -121,6 +123,10 @@ const FoodInput = (props) => {
 	////////////////////////
 
 	const handleDBsubmit = () => {
+		const formattedDate = props.selectedDateState
+			? dayjs(props.selectedDateState).format("DD-MM-YYYY").toString()
+			: "";
+
 		const nutrientList = [
 			"Calories",
 			"Sodium",
@@ -143,7 +149,7 @@ const FoodInput = (props) => {
 			name: props.ingredientDataState.name,
 			servings: servingsInput,
 			unit: selectedUnitOption,
-			date_entered: props.formattedDateState,
+			date_entered: formattedDate,
 			dayPeriod: selectedDayOption,
 		};
 
@@ -156,8 +162,6 @@ const FoodInput = (props) => {
 			const unit = nutrientObj ? nutrientObj.unit : null;
 			dbObj[nutrient] = nutrientObj ? `${amount}${unit}` : null;
 		});
-
-		console.log("dbobj", dbObj);
 
 		putDBSubmit(dbObj);
 	};
@@ -176,30 +180,49 @@ const FoodInput = (props) => {
 		<Box
 			sx={{
 				width: "100%",
-				// maxWidth: 360,
 				bgcolor: "background.paper",
 				border: "1px solid gray",
 			}}
 		>
 			{props.ingredientDataState.name && (
 				<>
-					<Typography>
+					<Typography
+						sx={{ textTransform: "capitalize", marginTop: "10px" }}
+						variant="h6"
+					>
 						{props.ingredientDataState.name} -{" "}
 						{props.ingredientDataState.category[0]}
 					</Typography>
+					<br />
 					<Typography>How much?</Typography>
-					<Box sx={{ display: "flex" }}>
+					<Box
+						sx={{
+							display: "flex",
+							alignItems: "center",
+							marginTop: "5px",
+							marginBottom: "5px",
+						}}
+					>
 						<TextField
 							value={servingsInput}
 							onChange={handleServingsInputChange}
 							label="Quantity"
 							variant="outlined"
+							InputProps={{
+								inputProps: {
+									type: "number",
+									min: "0",
+								},
+							}}
 							sx={{ width: "15%" }}
 						/>
-						<Typography>Servings of</Typography>
+						<Typography sx={{ marginRight: "10px", marginLeft: "10px" }}>
+							Servings of
+						</Typography>
 						<Select
 							value={selectedUnitOption}
 							onChange={handleUnitOptionChange}
+							sx={{ minWidth: "15%" }}
 						>
 							{props.ingredientDataState.possibleUnits.map((option) => (
 								<MenuItem
@@ -212,21 +235,25 @@ const FoodInput = (props) => {
 						</Select>
 					</Box>
 					<Typography>To which meal?</Typography>
-					<Select
-						value={selectedDayOption}
-						onChange={handleDayOptionChange}
-					>
-						<MenuItem value={"Breakfast"}>Breakfast</MenuItem>
-						<MenuItem value={"Lunch"}>Lunch</MenuItem>
-						<MenuItem value={"Dinner"}>Dinner</MenuItem>
-					</Select>
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={handleDBsubmit}
-					>
-						Add food
-					</Button>
+					<Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+						<Select
+							value={selectedDayOption}
+							onChange={handleDayOptionChange}
+							sx={{ minWidth: "20%", marginRight: "10px" }}
+						>
+							<MenuItem value={"Breakfast"}>Breakfast</MenuItem>
+							<MenuItem value={"Lunch"}>Lunch</MenuItem>
+							<MenuItem value={"Dinner"}>Dinner</MenuItem>
+						</Select>
+						<Button
+							variant="contained"
+							color="primary"
+							onClick={handleDBsubmit}
+						>
+							Add food
+						</Button>
+					</Box>
+					<br />
 				</>
 			)}
 		</Box>

@@ -2,24 +2,33 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import pymysql
 from flask_cors import CORS
-from datetime import datetime, timedelta
+
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token, \
     create_refresh_token, jwt_required, get_jwt_identity
+
+from dotenv import load_dotenv
+import os
+
+from datetime import datetime, timedelta
+
+load_dotenv()
 
 pymysql.install_as_MySQLdb()
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = \
-    'mysql://user:2r4u7udlol@localhost:3306/sys'
+    os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_TOKEN_LOCATION'] = ['headers']
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=0.5)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=30)
 
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
+
 db = SQLAlchemy(app)
+
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
@@ -38,7 +47,8 @@ class UserWeight(db.Model):
     weight_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'), nullable=False)
     weight = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    weight_date_entered = db.Column(db.String(80), nullable=False,
+                             default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('weights', lazy=True))
 
@@ -74,21 +84,22 @@ class UserNutrition(db.Model):
 ##############################################################################
 @app.route('/seed')
 def initialize_database():
-    # Drop all existing tables (for testing purposes)
+    # Drop all existing tables
     db.drop_all()
 
     # Create the tables
     db.create_all()
 
     # Create some example users
-    user1 = User(username='admin@admin', user_firstname="jesus",
-                     user_lastname="christ",
+    user1 = User(username='admin@admin', user_firstname="admin",
+                     user_lastname="jesus",
                 user_password_hash=bcrypt.generate_password_hash(
                     "admin").decode(
                      'utf-8'),
                  user_is_admin=True)
 
-    user1weight = UserWeight(user_id="1", weight="80")
+    user1weight = UserWeight(user_id="1", weight="80",
+                             weight_date_entered="01-01-1992")
     user1calories = UserNutrition(user_id = "1", date_entered=None,
                                  calories="300",
                                  ingredient_id="123",
@@ -102,7 +113,8 @@ def initialize_database():
                      'utf-8'))
 
 
-    user2weight = UserWeight(user_id="2", weight="70")
+    user2weight = UserWeight(user_id="2", weight="70", weight_date_entered =
+    "01-02-1992")
     user2calories = UserNutrition(user_id="2", date_entered=None,
                                  calories="500",
                                  ingredient_id="321",
@@ -110,7 +122,6 @@ def initialize_database():
                                  servings = "1",
                                  unit = "kg"
     )
-
 
     # Add the users to the session
     db.session.add(user1)
@@ -308,6 +319,7 @@ def relogin():
     user_id = user.user_id
     user_is_admin = user.user_is_admin
     return jsonify({'access_token': access_token, 'user_id': user_id, 'user_is_admin': user_is_admin}), 200
+
 @app.route('/refresh_token', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh_token():
@@ -316,7 +328,7 @@ def refresh_token():
     return jsonify({'access_token': new_access_token}), 200
 
 @app.route('/delete_user', methods=['DELETE'])
-# @jwt_required()
+@jwt_required()
 def delete_user():
     user_id = request.json.get('user_id')
 
@@ -342,6 +354,66 @@ def delete_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Failed to delete user and associated data'}), 500
+
+@app.route('/add_weight', methods=['POST'])
+@jwt_required()
+def add_weight():
+    user_id = request.json.get('user_id')
+    weight = request.json.get('weight')
+    weight_date_entered = request.json.get("date_entered")
+
+    if not user_id or not weight or not weight_date_entered:
+        return jsonify({'error': 'Incomplete parameters'}), 400
+
+    try:
+        # Check if the weight entry for the given date already exists
+        existing_weight = UserWeight.query.filter_by(user_id=user_id,
+                                                     weight_date_entered=weight_date_entered).first()
+
+        if existing_weight:
+            # Overwrite the existing weight entry with the new weight value
+            existing_weight.weight = weight
+            db.session.commit()
+            return jsonify({'message': 'Weight updated successfully'}), 200
+        else:
+            # Create a new UserWeight object
+            new_weight = UserWeight(user_id=user_id, weight=weight,
+                                    weight_date_entered=weight_date_entered)
+            db.session.add(new_weight)
+            db.session.commit()
+            return jsonify({'message': 'Weight added successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to add weight'}), 500
+
+@app.route('/user_weights', methods=['POST'])
+@jwt_required()
+def get_user_weights():
+    user_id = request.json.get('user_id')
+
+    if user_id is None:
+        return jsonify({'error': 'user_id is missing'}), 400
+
+    # Find the user with the provided user_id
+    user = User.query.get(user_id)
+
+    if user is None:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Retrieve all UserWeight rows belonging to the user
+    weights = UserWeight.query.filter_by(user_id=user_id).all()
+
+    # Prepare the response data
+    weight_data = []
+    for weight in weights:
+        weight_data.append({
+            'user_id': weight.user_id,
+            'weight': weight.weight,
+            'weight_date_entered': weight.weight_date_entered
+        })
+
+    return jsonify({'weights': weight_data}), 200
 
 if __name__ == '__main__':
     app.run()

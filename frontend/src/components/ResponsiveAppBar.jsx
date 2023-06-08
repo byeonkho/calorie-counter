@@ -1,19 +1,12 @@
-import React, { useState, useEffect } from "react";
+import LunchDiningIcon from "@mui/icons-material/LunchDining";
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
-import Menu from "@mui/material/Menu";
-import MenuIcon from "@mui/icons-material/Menu";
-import Container from "@mui/material/Container";
-import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
-import Tooltip from "@mui/material/Tooltip";
-import MenuItem from "@mui/material/MenuItem";
-import AdbIcon from "@mui/icons-material/Adb";
+import Container from "@mui/material/Container";
+import Toolbar from "@mui/material/Toolbar";
+import Typography from "@mui/material/Typography";
+import React from "react";
 import { useUserInfo } from "./UserInfoContext";
-import { AccessAlarm } from "@mui/icons-material";
 
 function ResponsiveAppBar(props) {
 	const {
@@ -22,16 +15,14 @@ function ResponsiveAppBar(props) {
 		setAccessToken,
 		setRefreshToken,
 		setUserID,
-		refreshToken,
-		accessToken,
 	} = useUserInfo();
 
 	const pages = [];
 
 	if (userIsAdmin) {
-		pages.push("Food", "Admin");
+		pages.push("Food", "Weight", "Admin");
 	} else {
-		pages.push("Food");
+		pages.push("Food", "Weight");
 	}
 
 	// const settings = ["Profile", "Account", "Dashboard", "Logout"];
@@ -46,12 +37,7 @@ function ResponsiveAppBar(props) {
 		setUserID("");
 		setUserIsAdmin(false);
 
-		// Perform any additional logout actions if needed
-
 		// Redirect to login page or homepage
-		// Replace the URL with the desired destination
-		console.log("logged out");
-		console.log(`refresh token: ${refreshToken}, access token: ${accessToken}`);
 
 		window.location.href = "/";
 	};
@@ -61,37 +47,43 @@ function ResponsiveAppBar(props) {
 		if (el == "Food") {
 			props.setShowFood(true);
 			props.setShowAdmin(false);
-			console.log("clicked home");
+			props.setShowWeight(false);
 		}
 		if (el == "Admin") {
-			console.log("clicked admin");
 			props.setShowFood(false);
 			props.setShowAdmin(true);
+			props.setShowWeight(false);
+		}
+		if (el == "Weight") {
+			props.setShowWeight(true);
+			props.setShowAdmin(false);
+			props.setShowFood(false);
 		}
 	};
 
-	
 	return (
 		<AppBar position="static">
 			<Container maxWidth="xl">
 				<Toolbar disableGutters>
-					<AdbIcon sx={{ display: { xs: "none", md: "flex" }, mr: 1 }} />
+					<LunchDiningIcon
+						sx={{ display: { xs: "none", md: "flex" }, mr: 1 }}
+					/>
 					<Typography
 						variant="h6"
 						noWrap
 						component="a"
 						href="/"
 						sx={{
-							mr: 2,
+							mr: 5,
 							display: { xs: "none", md: "flex" },
-							fontFamily: "monospace",
+							// fontFamily: "monospace",
 							fontWeight: 700,
-							letterSpacing: ".3rem",
+							letterSpacing: ".1rem",
 							color: "inherit",
 							textDecoration: "none",
 						}}
 					>
-						LOGO
+						calorie counter
 					</Typography>
 					<Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
 						{pages.map((page) => (

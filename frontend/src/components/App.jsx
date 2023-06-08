@@ -1,28 +1,28 @@
-import React, { useEffect, useState, createContext } from "react";
+import React, { useState } from "react";
 import Food from "./Food/Food";
-import Login from "./Login";
-
+import Login from "./Login/Login";
+import Signup from "./Login/Signup";
 import ResponsiveAppBar from "./ResponsiveAppBar";
-import Signup from "./Signup";
-// import UserInfoContext from "./UseContext";
-import { UserInfoProvider } from "./UserInfoContext";
-import { useUserInfo } from "./UserInfoContext";
 import Admin from "./Admin";
+import { UserInfoProvider } from "./UserInfoContext";
+import Weight from "./Weight/Weight";
 
 const App = () => {
 	const [showLogin, setShowLogin] = useState(true);
 	const [showSignup, setShowSignup] = useState(false);
 	const [showAdmin, setShowAdmin] = useState(false);
 	const [showFood, setShowFood] = useState(true);
+	const [showWeight, setShowWeight] = useState(false);
 	const [loading, setLoading] = useState(true);
 
 	return (
 		<>
 			<UserInfoProvider>
-				{!loading && !showLogin && (
+				{!loading && !showLogin && !showSignup && (
 					<ResponsiveAppBar
 						setShowFood={setShowFood}
 						setShowAdmin={setShowAdmin}
+						setShowWeight={setShowWeight}
 						loading={loading}
 					/>
 				)}
@@ -41,7 +41,10 @@ const App = () => {
 					/>
 				)}
 				{!showLogin && !showSignup && !loading && showFood && <Food />}
-				{!showLogin && !showSignup && !showFood && !loading && <Admin />}
+				{showWeight && <Weight />}
+				{!showLogin && !showSignup && !loading && !showFood && showAdmin && (
+					<Admin />
+				)}
 			</UserInfoProvider>
 		</>
 	);

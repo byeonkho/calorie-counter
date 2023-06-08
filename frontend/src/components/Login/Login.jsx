@@ -8,11 +8,12 @@ import {
 	Grid,
 	Box,
 } from "@mui/material";
-import { useUserInfo } from "./UserInfoContext";
+import { useUserInfo } from "../UserInfoContext";
 import jwt_decode from "jwt-decode";
 import CircularProgress from "@mui/material/CircularProgress";
 
 const Login = (props) => {
+	// const [relogin, setRelogin] = useState(false);
 	// State variable for loading screen
 
 	// init useContext
@@ -80,11 +81,11 @@ const Login = (props) => {
 			console.error("Error during login:", error);
 			// Handle error
 		}
+		// setRelogin(false);
 	};
 
 	const handleReLogin = async (storedRefreshToken) => {
 		try {
-			console.log("storedRefresh", storedRefreshToken);
 			const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 			const requestOptions = {
@@ -116,6 +117,11 @@ const Login = (props) => {
 				// Clear the form fields
 				setEmail("");
 				setPassword("");
+			} else if (response.status === 401) {
+				// Handle expired refresh token
+				console.error("Refresh token expired");
+				// setRelogin(true);
+				window.location.href = "/";
 			} else {
 				// Handle login failure
 				console.error("Login failed:", data.error);
@@ -162,7 +168,6 @@ const Login = (props) => {
 	}, []);
 
 	if (!props.loading) {
-		console.log("loading false");
 		return (
 			<Container maxWidth="xs">
 				<Box
@@ -215,17 +220,6 @@ const Login = (props) => {
 							Sign In
 						</Button>
 						<Grid container>
-							<Grid
-								item
-								xs
-							>
-								<Link
-									href="#"
-									variant="body2"
-								>
-									Forgot password?
-								</Link>
-							</Grid>
 							<Grid item>
 								<Link
 									href="#"
@@ -241,8 +235,6 @@ const Login = (props) => {
 			</Container>
 		);
 	} else {
-		console.log("loading true");
-
 		// Display loading spinner
 		return (
 			<Container maxWidth="xs">

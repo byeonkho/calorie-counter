@@ -1,46 +1,9 @@
-import React, { useState } from "react";
-import {
-	List,
-	Box,
-	ListItemButton,
-	ListItemText,
-	TextField,
-	Button,
-} from "@mui/material";
+import { Box, List, ListItemButton, ListItemText } from "@mui/material";
+import React from "react";
 
 import { fetchIngredientData } from "../../api/apifetchers";
 
 const FoodSearch = (props) => {
-	// input for the search query
-	const [searchQueryInputState, setSearchQueryInputState] = useState("");
-
-	///// handlers for onChange / onClick
-	const handleSearchQueryInputChange = (event) => {
-		setSearchQueryInputState(event.target.value);
-	};
-
-	const handleSearchQuerySubmit = () => {
-		getSearchQueryDataState(searchQueryInputState);
-	};
-
-	// broad search query (step 1 search)
-	const [searchQueryDataState, setSearchQueryDataState] = useState([]);
-
-	const getSearchQueryDataState = async (searchQueryInputState) => {
-		const { ok, data } = await fetchSearchIngredients(
-			searchQueryInputState,
-			null,
-			"GET"
-		);
-
-		if (ok) {
-			setSearchQueryDataState(data);
-			console.log("res ok", data);
-		} else {
-			console.log("res failed");
-		}
-	};
-
 	const getIngredientData = async (ingredientID) => {
 		const { ok, data } = await fetchIngredientData(ingredientID, null);
 
@@ -56,17 +19,14 @@ const FoodSearch = (props) => {
 				dayPeriod: null,
 			};
 			props.setIngredientDataState(cleanedData);
-			console.log("res ok", "ingredientDataState", cleanedData);
 		} else {
 			console.log("res failed");
 		}
 	};
 
 	const handleIngredientClick = (value) => {
-		console.log("Clicked value:", value);
 		getIngredientData(value);
 	};
-
 
 	return (
 		<Box
@@ -77,20 +37,6 @@ const FoodSearch = (props) => {
 				border: "1px solid gray",
 			}}
 		>
-			{/* <TextField
-				value={searchQueryInputState}
-				onChange={handleSearchQueryInputChange}
-				label="Search for food"
-				variant="outlined"
-				sx={{ width: "35%" }}
-			/>
-			<Button
-				variant="contained"
-				color="primary"
-				onClick={handleSearchQuerySubmit}
-			>
-				Search
-			</Button> */}
 			<List
 				component="nav"
 				style={{ maxHeight: 400, overflow: "auto" }}
