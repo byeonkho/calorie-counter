@@ -14,28 +14,34 @@ const App = () => {
 	const [showSignup, setShowSignup] = useState(false);
 	const [showAdmin, setShowAdmin] = useState(false);
 	const [showFood, setShowFood] = useState(true);
+	const [loading, setLoading] = useState(true);
 
 	return (
 		<>
 			<UserInfoProvider>
-				<ResponsiveAppBar
-					setShowFood={setShowFood}
-					setShowAdmin={setShowAdmin}
-				/>
+				{!loading && !showLogin && (
+					<ResponsiveAppBar
+						setShowFood={setShowFood}
+						setShowAdmin={setShowAdmin}
+						loading={loading}
+					/>
+				)}
 				{showLogin && (
 					<Login
 						setShowSignup={setShowSignup}
 						setShowLogin={setShowLogin}
+						setLoading={setLoading}
+						loading={loading}
 					/>
 				)}
-				{showSignup && (
+				{showSignup && !loading && (
 					<Signup
 						setShowSignup={setShowSignup}
 						setShowLogin={setShowLogin}
 					/>
 				)}
-				{!showLogin && !showSignup && showFood && <Food />}
-				{!showLogin && !showSignup && !showFood && <Admin />}
+				{!showLogin && !showSignup && !loading && showFood && <Food />}
+				{!showLogin && !showSignup && !showFood && !loading && <Admin />}
 			</UserInfoProvider>
 		</>
 	);

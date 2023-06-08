@@ -9,12 +9,22 @@ import {
 	Box,
 } from "@mui/material";
 import { useUserInfo } from "./UserInfoContext";
+import jwt_decode from "jwt-decode";
+import CircularProgress from "@mui/material/CircularProgress";
 
 const Login = (props) => {
-	// init useContext
-	const { setUserID, setAccessToken, setRefreshToken, setUserIsAdmin } =
-		useUserInfo();
+	// State variable for loading screen
 
+	// init useContext
+	const {
+		setUserID,
+		setAccessToken,
+		accessToken,
+		setRefreshToken,
+		setUserIsAdmin,
+	} = useUserInfo();
+
+	// states and handlers for email and password input
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 
@@ -26,12 +36,10 @@ const Login = (props) => {
 		setPassword(event.target.value);
 	};
 
-	const handleSubmit = async (event) => {
+	const handleLogin = async (event) => {
 		event.preventDefault();
 
 		try {
-			console.log(email);
-			console.log(password);
 			const backendURL = import.meta.env.VITE_BACKEND_URL;
 
 			const requestOptions = {
@@ -48,7 +56,6 @@ const Login = (props) => {
 			const response = await fetch(`${backendURL}/login`, requestOptions);
 			const data = await response.json();
 
-			console.log(data);
 			if (response.ok) {
 				const { access_token, refresh_token, user_id, user_is_admin } = data;
 
@@ -57,14 +64,14 @@ const Login = (props) => {
 				await setRefreshToken(refresh_token);
 				await setUserID(user_id);
 				await setUserIsAdmin(user_is_admin);
-				console.log("login user id", user_id);
+
 				// Perform any necessary actions after successful login
-				if (setAccessToken) {
+				if (accessToken) {
+					// Clear the form fields and render homepage
+					setEmail("");
+					setPassword("");
 					props.setShowLogin(false);
 				}
-				// Clear the form fields
-				setEmail("");
-				setPassword("");
 			} else {
 				// Handle login failure
 				console.error("Login failed:", data.error);
@@ -75,96 +82,184 @@ const Login = (props) => {
 		}
 	};
 
+	const handleReLogin = async (storedRefreshToken) => {
+		try {
+			console.log("storedRefresh", storedRefreshToken);
+			const backendURL = import.meta.env.VITE_BACKEND_URL;
+
+			const requestOptions = {
+				method: "GET",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${storedRefreshToken}`,
+				},
+			};
+
+			const response = await fetch(`${backendURL}/relogin`, requestOptions);
+			const data = await response.json();
+
+			if (response.ok) {
+				const { access_token, user_id, user_is_admin } = data;
+
+				// Update the context state with the received data
+				await setAccessToken(access_token);
+				await setUserID(user_id);
+				await setUserIsAdmin(user_is_admin);
+
+				// Perform any necessary actions after successful login
+				if (accessToken) {
+					setTimeout(() => {
+						props.setShowLogin(false);
+						props.setLoading(false);
+					}, 500);
+				}
+				// Clear the form fields
+				setEmail("");
+				setPassword("");
+			} else {
+				// Handle login failure
+				console.error("Login failed:", data.error);
+				props.setLoading(false);
+			}
+		} catch (error) {
+			console.error("Error during login:", error);
+			// Handle error
+			props.setLoading(false);
+		}
+	};
+
 	const handleGoToSignupPage = () => {
 		props.setShowLogin(false);
 		props.setShowSignup(true);
 	};
 
-	useEffect(() => {
+	const handleLoginEffect = async () => {
 		const storedRefreshToken = localStorage.getItem("refreshToken");
+
 		if (storedRefreshToken) {
-			setRefreshToken(storedRefreshToken);
-			console.log("refresh token retrieved", storedRefreshToken);
+			try {
+				const decodedToken = jwt_decode(storedRefreshToken);
+
+				if (decodedToken && decodedToken.exp * 1000 < Date.now()) {
+					// Refresh token has expired
+					localStorage.clear();
+				} else {
+					// Refresh token is still valid
+					setRefreshToken(storedRefreshToken);
+
+					await handleReLogin(storedRefreshToken);
+				}
+			} catch (error) {
+				console.error("Error decoding refresh token:", error);
+			}
+		} else {
+			props.setLoading(false);
 		}
+	};
+
+	useEffect(() => {
+		handleLoginEffect();
 	}, []);
 
-	return (
-		<Container maxWidth="xs">
-			<Box
-				sx={{
-					marginTop: 8,
-					display: "flex",
-					flexDirection: "column",
-					alignItems: "center",
-				}}
-			>
-				<Typography
-					component="h1"
-					variant="h5"
-				>
-					Login
-				</Typography>
+	if (!props.loading) {
+		console.log("loading false");
+		return (
+			<Container maxWidth="xs">
 				<Box
-					component="form"
-					onSubmit={handleSubmit}
-					sx={{ mt: 1 }}
+					sx={{
+						marginTop: 8,
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+					}}
 				>
-					<TextField
-						id="email"
-						label="Email"
-						type="email"
-						variant="outlined"
-						margin="normal"
-						required
-						fullWidth
-						value={email}
-						onChange={handleEmailChange}
-					/>
-					<TextField
-						id="password"
-						label="Password"
-						type="password"
-						variant="outlined"
-						margin="normal"
-						required
-						fullWidth
-						value={password}
-						onChange={handlePasswordChange}
-					/>
-					<Button
-						type="submit"
-						fullWidth
-						variant="contained"
-						sx={{ mt: 3, mb: 2 }}
+					<Typography
+						component="h1"
+						variant="h5"
 					>
-						Sign In
-					</Button>
-					<Grid container>
-						<Grid
-							item
-							xs
+						Login
+					</Typography>
+					<Box
+						component="form"
+						onSubmit={handleLogin}
+						sx={{ mt: 1 }}
+					>
+						<TextField
+							id="email"
+							label="Email"
+							type="email"
+							variant="outlined"
+							margin="normal"
+							required
+							fullWidth
+							value={email}
+							onChange={handleEmailChange}
+						/>
+						<TextField
+							id="password"
+							label="Password"
+							type="password"
+							variant="outlined"
+							margin="normal"
+							required
+							fullWidth
+							value={password}
+							onChange={handlePasswordChange}
+						/>
+						<Button
+							type="submit"
+							fullWidth
+							variant="contained"
+							sx={{ mt: 3, mb: 2 }}
 						>
-							<Link
-								href="#"
-								variant="body2"
+							Sign In
+						</Button>
+						<Grid container>
+							<Grid
+								item
+								xs
 							>
-								Forgot password?
-							</Link>
+								<Link
+									href="#"
+									variant="body2"
+								>
+									Forgot password?
+								</Link>
+							</Grid>
+							<Grid item>
+								<Link
+									href="#"
+									variant="body2"
+									onClick={handleGoToSignupPage}
+								>
+									Don't have an account? Sign Up
+								</Link>
+							</Grid>
 						</Grid>
-						<Grid item>
-							<Link
-								href="#"
-								variant="body2"
-								onClick={handleGoToSignupPage}
-							>
-								Don't have an account? Sign Up
-							</Link>
-						</Grid>
-					</Grid>
+					</Box>
 				</Box>
-			</Box>
-		</Container>
-	);
+			</Container>
+		);
+	} else {
+		console.log("loading true");
+
+		// Display loading spinner
+		return (
+			<Container maxWidth="xs">
+				<Box
+					sx={{
+						marginTop: 8,
+						display: "flex",
+						flexDirection: "column",
+						alignItems: "center",
+					}}
+				>
+					Loading.. <br />
+					<CircularProgress />
+				</Box>
+			</Container>
+		);
+	}
 };
 
 export default Login;

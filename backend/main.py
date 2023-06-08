@@ -270,7 +270,6 @@ def register():
 # Login endpoint
 @app.route('/login', methods=['POST'])
 def login():
-    # return jsonify({'message': 'Invalid username or password'}), 401
     username = request.json.get('username')
     password = request.json.get('password')
 
@@ -290,6 +289,25 @@ def login():
             refresh_token, 'user_id': user_id, 'user_is_admin': user_is_admin}), 200
 
 
+@app.route('/relogin', methods=['GET'])
+@jwt_required(refresh=True)
+def relogin():
+    user_id = get_jwt_identity()
+    print(user_id)
+
+    if not user_id:
+        return jsonify({'message': 'User ID is required'}), 400
+
+    # Find the User row with the given user_id
+    user = db.session.get(User, user_id)
+
+    if user is None:
+        return jsonify({'error': 'User not found'}), 404
+
+    access_token = create_access_token(identity=user.user_id)
+    user_id = user.user_id
+    user_is_admin = user.user_is_admin
+    return jsonify({'access_token': access_token, 'user_id': user_id, 'user_is_admin': user_is_admin}), 200
 @app.route('/refresh_token', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh_token():
