@@ -18,6 +18,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useUserInfo } from "../UserInfoContext";
 import { useTheme } from "@mui/material/styles";
 import dayjs from "dayjs";
+import PieChart from "./FoodPie";
 
 const FoodHome = (props) => {
 	const theme = useTheme();
@@ -723,6 +724,9 @@ const FoodHome = (props) => {
 					</TableBody>
 				</Table>
 			</TableContainer>
+			<Box sx={{ margin: "auto", marginTop: "25px", width: "50%" }}>
+				<PieChart totals={totals} />
+			</Box>
 		</>
 	);
 };
