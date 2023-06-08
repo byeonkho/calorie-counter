@@ -14,12 +14,24 @@ import {
 } from "@mui/material";
 import ClearIcon from "@mui/icons-material/Clear";
 import IconButton from "@mui/material/IconButton";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { useUserInfo } from "../UserInfoContext";
 
 const FoodHome = (props) => {
-	const [HomeFoodDataState, setHomeFoodDataState] = useState([]);
+	const { userID, accessToken } = useUserInfo();
 
-	const user_id = 1;
+	const [homeFoodDataState, setHomeFoodDataState] = useState([]);
+
+	const [totals, setTotals] = useState({
+		calories: 0,
+		carbohydrates: 0,
+		fat: 0,
+		protein: 0,
+		sodium: 0,
+		sugar: 0,
+	});
+
+	const user_id = userID;
 	const date_entered = props.formattedDateState;
 
 	////////////////////// handlers
@@ -67,6 +79,7 @@ const FoodHome = (props) => {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
+				Authorization: `Bearer ${accessToken}`,
 			},
 			body: JSON.stringify({ user_id, date_entered }),
 		};
@@ -106,8 +119,45 @@ const FoodHome = (props) => {
 		};
 	}, [props.formattedDateState]);
 
-    // why does useeffect trigger when i submit food?
+	// why does useeffect trigger when i submit food?
 
+	useEffect(() => {
+		// Calculate totals whenever homeFoodDataState changes
+		if (homeFoodDataState.nutrients) {
+			calculateTotals();
+		}
+	}, [homeFoodDataState]);
+
+	const calculateTotals = () => {
+		const totals = {
+			calories: 0,
+			carbohydrates: 0,
+			fat: 0,
+			protein: 0,
+			sodium: 0,
+			sugar: 0,
+		};
+
+		for (const nutrient of homeFoodDataState.nutrients) {
+			const calories = parseFloat(nutrient.Calories.replace(/[^0-9.]/g, ""));
+			const carbohydrates = parseFloat(
+				nutrient.Carbohydrates.replace(/[^0-9.]/g, "")
+			);
+			const fat = parseFloat(nutrient.Fat.replace(/[^0-9.]/g, ""));
+			const protein = parseFloat(nutrient.Protein.replace(/[^0-9.]/g, ""));
+			const sodium = parseFloat(nutrient.Sodium.replace(/[^0-9.]/g, ""));
+			const sugar = parseFloat(nutrient.Sugar.replace(/[^0-9.]/g, ""));
+
+			totals.calories += calories;
+			totals.carbohydrates += carbohydrates;
+			totals.fat += fat;
+			totals.protein += protein;
+			totals.sodium += sodium;
+			totals.sugar += sugar;
+		}
+
+		setTotals(totals);
+	};
 	return (
 		<>
 			<br />
@@ -220,11 +270,19 @@ const FoodHome = (props) => {
 								Sugar
 								<br />g
 							</TableCell>
+							<TableCell
+								align="center"
+								sx={{
+									fontWeight: "bold",
+									backgroundColor: (theme) => theme.palette.secondary.main,
+									width: "10%",
+								}}
+							></TableCell>
 						</TableRow>
 					</TableHead>
 					<TableBody>
-						{HomeFoodDataState.nutrients &&
-							HomeFoodDataState.nutrients
+						{homeFoodDataState.nutrients &&
+							homeFoodDataState.nutrients
 								.filter((nutrient) => nutrient.period_of_day === "Breakfast")
 								.map((nutrient) => {
 									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
@@ -239,7 +297,9 @@ const FoodHome = (props) => {
 									return (
 										<TableRow
 											key={nutrient.nutrition_id}
-											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+											sx={{
+												"&:last-child td, &:last-child th": { border: 0 },
+											}}
 										>
 											<TableCell
 												align="left"
@@ -315,8 +375,8 @@ const FoodHome = (props) => {
 					aria-label="a dense table"
 				>
 					<TableBody>
-						{HomeFoodDataState.nutrients &&
-							HomeFoodDataState.nutrients
+						{homeFoodDataState.nutrients &&
+							homeFoodDataState.nutrients
 								.filter((nutrient) => nutrient.period_of_day === "Lunch")
 								.map((nutrient) => {
 									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
@@ -332,7 +392,9 @@ const FoodHome = (props) => {
 									return (
 										<TableRow
 											key={nutrient.nutrition_id}
-											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+											sx={{
+												"&:last-child td, &:last-child th": { border: 0 },
+											}}
 										>
 											<TableCell
 												align="left"
@@ -408,8 +470,8 @@ const FoodHome = (props) => {
 					aria-label="a dense table"
 				>
 					<TableBody>
-						{HomeFoodDataState.nutrients &&
-							HomeFoodDataState.nutrients
+						{homeFoodDataState.nutrients &&
+							homeFoodDataState.nutrients
 								.filter((nutrient) => nutrient.period_of_day === "Dinner")
 								.map((nutrient) => {
 									const calories = nutrient.Calories.replace(/[^0-9.]/g, "");
@@ -425,7 +487,9 @@ const FoodHome = (props) => {
 									return (
 										<TableRow
 											key={nutrient.nutrition_id}
-											sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+											sx={{
+												"&:last-child td, &:last-child th": { border: 0 },
+											}}
 										>
 											<TableCell
 												align="left"
@@ -490,6 +554,67 @@ const FoodHome = (props) => {
 				</Table>
 			</TableContainer>
 			<Button onClick={handleToggleFoodHome}>Add Food</Button>
+
+			<TableContainer component={Paper}>
+				<Table
+					// sx={{ minWidth: 650 }}
+					size="small"
+					aria-label="a dense table"
+				>
+					<TableBody>
+						<TableRow
+							sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+						>
+							<TableCell
+								align="right"
+								sx={{ width: "20%" }}
+							>
+								Total
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.calories}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.carbohydrates}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.fat}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.protein}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.sodium}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							>
+								{totals.sugar}
+							</TableCell>
+							<TableCell
+								align="center"
+								sx={{ width: "10%" }}
+							></TableCell>
+						</TableRow>
+					</TableBody>
+				</Table>
+			</TableContainer>
 		</>
 	);
 };

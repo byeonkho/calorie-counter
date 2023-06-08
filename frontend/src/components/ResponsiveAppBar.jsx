@@ -12,11 +12,21 @@ import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
+import { useUserInfo } from "./UserInfoContext";
 
-const pages = ["Home", "Food", "Goals"];
-const settings = ["Profile", "Account", "Dashboard", "Logout"];
+function ResponsiveAppBar(props) {
+	const { userIsAdmin } = useUserInfo();
 
-function ResponsiveAppBar() {
+	const pages = [];
+
+	if (userIsAdmin) {
+		pages.push("Food", "Admin");
+	} else {
+		pages.push("Food");
+	}
+
+	const settings = ["Profile", "Account", "Dashboard", "Logout"];
+
 	const [anchorElNav, setAnchorElNav] = useState(null);
 	const [anchorElUser, setAnchorElUser] = useState(null);
 
@@ -27,8 +37,18 @@ function ResponsiveAppBar() {
 		setAnchorElUser(event.currentTarget);
 	};
 
-	const handleCloseNavMenu = () => {
+	const handleCloseNavMenu = (el) => {
 		setAnchorElNav(null);
+		if (el == "Food") {
+			props.setShowFood(true);
+			props.setShowAdmin(false);
+			console.log("clicked home");
+		}
+		if (el == "Admin") {
+			console.log("clicked admin");
+			props.setShowFood(false);
+			props.setShowAdmin(true);
+		}
 	};
 
 	const handleCloseUserMenu = () => {
@@ -58,7 +78,7 @@ function ResponsiveAppBar() {
 						LOGO
 					</Typography>
 
-					<Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
+					{/* <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
 						<IconButton
 							size="large"
 							aria-label="account of current user"
@@ -96,8 +116,8 @@ function ResponsiveAppBar() {
 								</MenuItem>
 							))}
 						</Menu>
-					</Box>
-					<AdbIcon sx={{ display: { xs: "flex", md: "none" }, mr: 1 }} />
+					</Box> */}
+					{/* <AdbIcon sx={{ display: { xs: "flex", md: "none" }, mr: 1 }} />
 					<Typography
 						variant="h5"
 						noWrap
@@ -115,12 +135,14 @@ function ResponsiveAppBar() {
 						}}
 					>
 						LOGO
-					</Typography>
+					</Typography> */}
+
 					<Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
 						{pages.map((page) => (
 							<Button
 								key={page}
-								onClick={handleCloseNavMenu}
+								value={page}
+								onClick={() => handleCloseNavMenu(page)} // Pass 'page' as an argument to the handleCloseNavMenu function
 								sx={{ my: 2, color: "white", display: "block" }}
 							>
 								{page}
@@ -128,7 +150,7 @@ function ResponsiveAppBar() {
 						))}
 					</Box>
 
-					<Box sx={{ flexGrow: 0 }}>
+					{/* <Box sx={{ flexGrow: 0 }}>
 						<Tooltip title="Open settings">
 							<IconButton
 								onClick={handleOpenUserMenu}
@@ -165,7 +187,7 @@ function ResponsiveAppBar() {
 								</MenuItem>
 							))}
 						</Menu>
-					</Box>
+					</Box> */}
 				</Toolbar>
 			</Container>
 		</AppBar>

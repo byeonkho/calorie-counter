@@ -8,10 +8,12 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { fetchIngredientData } from "../../api/apifetchers";
+import { useUserInfo } from "../UserInfoContext";
 
 const FoodInput = (props) => {
-	// PLACEHOLDER BEFORE LOGIN SYSTEM
-	const user_id = 1;
+	const { userID } = useUserInfo();
+
+	const user_id = userID;
 	const date_entered = props.formattedDateState;
 
 	const [servingsInput, setServingsInput] = useState("");
@@ -136,7 +138,7 @@ const FoodInput = (props) => {
 		];
 
 		const dbObj = {
-			user_id: "1",
+			user_id: user_id,
 			ingredient_id: props.ingredientDataState.id,
 			name: props.ingredientDataState.name,
 			servings: servingsInput,
@@ -155,7 +157,7 @@ const FoodInput = (props) => {
 			dbObj[nutrient] = nutrientObj ? `${amount}${unit}` : null;
 		});
 
-		console.log(dbObj);
+		console.log("dbobj", dbObj);
 
 		putDBSubmit(dbObj);
 	};

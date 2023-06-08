@@ -127,38 +127,18 @@ def initialize_database():
 
 
 @app.route('/users', methods=['GET'])
+@jwt_required()
 def get_users():
-    users = db.session.query(User, UserWeight, UserNutrition).\
-        join(UserWeight, User.user_id == UserWeight.user_id).\
-        join(UserNutrition, User.user_id == UserNutrition.user_id).all()
+    users = db.session.query(User)
 
     rows = []
-    for user, weight, nutrition in users:
+    for user in users:
         user_data = {
             'user_id': user.user_id,
             'username': user.username,
             'user_firstname': user.user_firstname,
             'user_lastname': user.user_lastname,
-            'user_password_hash': user.user_password_hash,
             'user_is_admin': user.user_is_admin,
-            'weight_id': weight.weight_id,
-            'weight': weight.weight,
-            'timestamp': weight.timestamp,
-            'nutrition_id': nutrition.nutrition_id,
-            'date_entered': nutrition.date_entered,
-            'calories': nutrition.calories,
-            'fat': nutrition.fat,
-            'saturated': nutrition.saturated,
-            'polyunsaturatedfat': nutrition.polyunsaturatedfat,
-            'monounsaturatedfat': nutrition.monounsaturatedfat,
-            'transfat': nutrition.transfat,
-            'cholesterol': nutrition.cholesterol,
-            'sodium': nutrition.sodium,
-            'potassium': nutrition.potassium,
-            'carbohydrates': nutrition.carbohydrates,
-            'fiber': nutrition.fiber,
-            'sugar': nutrition.sugar,
-            'protein': nutrition.protein
         }
         rows.append(user_data)
 
@@ -206,6 +186,7 @@ def add_food():
 
 
 @app.route('/getuserfoods', methods=['POST'])
+@jwt_required()
 def get_userfoods():
     data = request.json
     user_id = data.get('user_id')
@@ -303,7 +284,10 @@ def login():
     if bcrypt.check_password_hash(user.user_password_hash, password):
         access_token = create_access_token(identity=user.user_id)
         refresh_token = create_refresh_token(identity=user.user_id)
-        return jsonify({'access_token': access_token, 'refresh_token': refresh_token}), 200
+        user_id = user.user_id
+        user_is_admin = user.user_is_admin
+        return jsonify({'access_token': access_token, 'refresh_token':
+            refresh_token, 'user_id': user_id, 'user_is_admin': user_is_admin}), 200
 
 
 @app.route('/refresh_token', methods=['POST'])
@@ -313,6 +297,33 @@ def refresh_token():
     new_access_token = create_access_token(identity=current_user)
     return jsonify({'access_token': new_access_token}), 200
 
+@app.route('/delete_user', methods=['DELETE'])
+# @jwt_required()
+def delete_user():
+    user_id = request.json.get('user_id')
+
+    if user_id is None:
+        return jsonify({'error': 'user_id is missing'}), 400
+
+    # Find the User row with the given user_id
+    user = db.session.get(User, user_id)
+
+    if user is None:
+        return jsonify({'error': 'User not found'}), 404
+
+    try:
+        # Delete associated rows from other tables
+        UserWeight.query.filter_by(user_id=user_id).delete()
+        UserNutrition.query.filter_by(user_id=user_id).delete()
+
+        # Delete the user row from the database
+        db.session.delete(user)
+        db.session.commit()
+
+        return jsonify({'message': 'User and associated data deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete user and associated data'}), 500
 
 if __name__ == '__main__':
     app.run()

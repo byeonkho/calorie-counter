@@ -9,7 +9,7 @@ import {
 	Box,
 } from "@mui/material";
 
-const Signup = () => {
+const Signup = (props) => {
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [email, setEmail] = useState("");
@@ -74,11 +74,15 @@ const Signup = () => {
 			const data = await response.json();
 			// Handle the response data
 			console.log(data);
+
+			props.setShowLogin(true);
+			props.setShowSignup(false);
 		} catch (error) {
 			// Handle any errors
 			console.error("Error:", error);
 		}
 	};
+
 	return (
 		<Container maxWidth="xs">
 			<Box
@@ -177,6 +181,10 @@ const Signup = () => {
 							<Link
 								href="#"
 								variant="body2"
+								onClick={() => {
+									props.setShowSignup(false);
+									props.setShowLogin(true);
+								}}
 							>
 								Already have an account? Sign In
 							</Link>

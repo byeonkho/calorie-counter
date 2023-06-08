@@ -3,10 +3,11 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { fetchSearchIngredients } from "../../api/apifetchers";
 import FoodAdd from "./FoodAdd";
 import FoodHome from "./FoodHome";
+import { useUserInfo } from "../UserInfoContext";
 
 const Food = () => {
 	const [selectedDateState, setSelectedDateState] = useState("");
@@ -62,37 +63,6 @@ const Food = () => {
 		}
 	};
 
-	// const fetchHomeFoodData = async () => {
-	// 	console.log("fetching homefooddata");
-	// 	const backendURL = import.meta.env.VITE_BACKEND_URL;
-
-	// 	const requestOptions = {
-	// 		method: "POST",
-	// 		headers: {
-	// 			"Content-Type": "application/json",
-	// 		},
-	// 		body: JSON.stringify({ user_id, date_entered }),
-	// 	};
-
-	// 	try {
-	// 		const response = await fetch(
-	// 			backendURL + "/getuserfoods",
-	// 			requestOptions
-	// 		);
-	// 		if (!response.ok) {
-	// 			throw new Error("Request failed with status " + response.status);
-	// 		}
-
-	// 		const data = await response.json();
-	// 		console.log("Nutrients:", data);
-	// 		setHomeFoodDataState(data);
-	// 		// Process the received nutrients data
-	// 	} catch (error) {
-	// 		console.error("Error:", error);
-	// 		// Handle the error
-	// 	}
-	// };
-
 	return (
 		<Grid
 			container
@@ -118,7 +88,6 @@ const Food = () => {
 				</LocalizationProvider>
 				{formattedDateState}
 			</Box>
-
 			{/* food homepage component for showing food entries on selected date */}
 			<Grid
 				item
